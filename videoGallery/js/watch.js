@@ -52,14 +52,14 @@ function renderWatchVideo(videoInfo) {
   if (videoType === "youtube") {
     const videoId = getYouTubeId(videoInfo.video_link);
     const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-    playerHtml = `<iframe src="${embedUrl}" frameborder="0" allowfullscreen></iframe>`;
+    playerHtml = `<iframe src="${embedUrl}" frameborder="0" allowfullscreen style="width: 100%; height: 100%; object-fit: fill;"></iframe>`;
   } else if (videoType === "vimeo") {
     const videoId = getVimeoId(videoInfo.video_link);
     const embedUrl = `https://player.vimeo.com/video/${videoId}?autoplay=1`;
-    playerHtml = `<iframe src="${embedUrl}" frameborder="0" allowfullscreen></iframe>`;
+    playerHtml = `<iframe src="${embedUrl}" frameborder="0" allowfullscreen style="width: 100%; height: 100%; object-fit: fill;"></iframe>`;
   } else if (videoType === "direct" || videoType === "other") {
     playerHtml = `
-      <video controls autoplay>
+      <video controls autoplay style="width: 100%; height: 100%; object-fit: fill;">
         <source src="${videoInfo.video_link}" type="${getVideoFileType(videoInfo.video_link)}">
         Your browser does not support the video tag.
       </video>
@@ -72,10 +72,10 @@ function renderWatchVideo(videoInfo) {
     </div>
     <div class="watch-video-info">
       <h1 class="watch-title">${videoInfo.topic}</h1>
-      <div class="watch-meta">
-        <div class="meta-pill"><span class="meta-icon">⏱️</span> <span>${formatDuration(videoInfo.topic_duration)} hrs</span></div>
-        <div class="meta-pill"><span class="meta-icon">👁️</span> <span>${videoInfo.watch_count} views</span></div>
-        <div class="meta-pill"><span class="meta-icon">📅</span> <span>${videoInfo.fr_training_date || "—"}</span></div>
+      <div class="modal-meta">
+        <div class="modal-meta-item"><span class="meta-icon">⏱️</span> ${formatDuration(videoInfo.topic_duration)} hrs</div>
+        <div class="modal-meta-item"><span class="meta-icon">👁️</span> ${videoInfo.watch_count} views</div>
+        <div class="modal-meta-item"><span class="meta-icon">📅</span> ${videoInfo.fr_training_date || "—"}</div>
       </div>
       <div class="watch-description">${videoInfo.video_description}</div>
       <div class="watch-tags">
