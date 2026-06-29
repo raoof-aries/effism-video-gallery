@@ -3,15 +3,15 @@
 
 // Initialize the page
 document.addEventListener("DOMContentLoaded", function () {
-  // Populate side navbar
-  // populateSideNavbar();
-
   // Set default view to "recently added"
   currentView = "featured";
 
   // Add event listeners to view tabs
   document.querySelectorAll(".view-tab").forEach((tab) => {
     tab.addEventListener("click", function () {
+      if (typeof hideInlinePlayer === "function") {
+        hideInlinePlayer();
+      }
       const viewType = this.getAttribute("data-view");
       switchView(viewType);
     });
@@ -23,7 +23,12 @@ document.addEventListener("DOMContentLoaded", function () {
   // Add event listener to search input
   document
     .getElementById("search-input")
-    .addEventListener("input", filterVideos);
+    .addEventListener("input", function() {
+      if (typeof hideInlinePlayer === "function") {
+        hideInlinePlayer();
+      }
+      filterVideos();
+    });
 
   // Add event listener to close modal
   document
@@ -45,4 +50,27 @@ document.addEventListener("DOMContentLoaded", function () {
       closeVideoModal();
     }
   });
+
+  // Handle browser back/forward buttons
+  window.addEventListener("popstate", function (e) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoId = urlParams.get("v");
+    if (videoId) {
+      if (window.videosData) {
+        const video = window.videosData.find(v => String(v.id) === String(videoId));
+        if (video && typeof showInlinePlayer === "function") {
+          showInlinePlayer(video, true);
+          return;
+        }
+      }
+    }
+    if (typeof hideInlinePlayer === "function") {
+      hideInlinePlayer(true);
+    }
+  });
+
+  // Auto-open video if "v" query param is present on load
+  if (typeof checkAndAutoOpenVideo === "function") {
+    checkAndAutoOpenVideo();
+  }
 });

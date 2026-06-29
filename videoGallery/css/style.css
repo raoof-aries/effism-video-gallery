@@ -838,3 +838,84 @@ header {
     margin-top: 0;
   }
 }
+
+/* Copy Link Button styles */
+.copy-link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1rem;
+  background-color: var(--secondary-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-color);
+  font-weight: 500;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-top: 0.75rem;
+  width: 100%;
+}
+
+.copy-link-btn:hover {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.copy-link-btn.copied {
+  background-color: #2ecc71 !important;
+  color: white !important;
+  border-color: #2ecc71 !important;
+}
+
+/* Inline Player Header Buttons */
+.back-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  padding: 0.6rem 1.25rem;
+  border-radius: 9999px;
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  border: 1px solid rgba(26, 123, 159, 0.15);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.back-pill-btn:hover {
+  background-color: var(--primary-hover);
+  color: var(--hover-color);
+  border-color: var(--primary-color);
+}
+
+.copy-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  padding: 0.6rem 1.25rem;
+  border-radius: 9999px;
+  background-color: var(--secondary-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.copy-pill-btn:hover {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.copy-pill-btn.copied {
+  background-color: #2ecc71 !important;
+  color: white !important;
+  border-color: #2ecc71 !important;
+}
+
+

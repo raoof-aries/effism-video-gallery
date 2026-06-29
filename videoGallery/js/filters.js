@@ -7,6 +7,21 @@ let selectedMainCategory = "all";
 let selectedSubCategory = "all";
 let isInitialLoad = true; // Track if this is the initial page load
 
+// Parse query parameters to pre-select category filters
+(function parseQueryParameters() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const catParam = urlParams.get("cat");
+  const subParam = urlParams.get("sub");
+  
+  if (catParam) {
+    selectedMainCategory = catParam;
+    selectedSubCategory = subParam || "all";
+    currentView = "all";
+    isInitialLoad = false;
+  }
+})();
+
+
 // Function to extract unique categories from video data
 function extractCategories() {
   const mainCategoriesMap = new Map();

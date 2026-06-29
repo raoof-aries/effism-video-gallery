@@ -30,7 +30,7 @@ function renderVideos(videos) {
             <div class="play-icon">▶</div>
           </div>
           <div class="video-info">
-            <div class="video-title">${video.topic}</div>
+            <div class="video-title" style="cursor: pointer;">${video.topic}</div>
             <div class="video-meta">
               <div class="meta-item">
                 <span class="meta-icon">⏱️</span>
@@ -56,16 +56,50 @@ function renderVideos(videos) {
         : ""
       }
             </div>
+            <button class="copy-link-btn" data-video-id="${video.id}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+              <span>Copy Link</span>
+            </button>
           </div>
         `;
     galleryContainer.appendChild(videoCard);
   });
 
-  // Add click event to video thumbnails
-  document.querySelectorAll(".video-thumbnail").forEach((thumbnail) => {
-    thumbnail.addEventListener("click", function () {
-      const videoInfo = JSON.parse(this.getAttribute("data-video-info"));
-      openVideoModal(videoInfo);
+  // Add click event to video thumbnails and titles
+  document.querySelectorAll(".video-thumbnail, .video-title").forEach((el) => {
+    el.addEventListener("click", function () {
+      let videoInfo;
+      if (this.classList.contains("video-thumbnail")) {
+        videoInfo = JSON.parse(this.getAttribute("data-video-info"));
+      } else {
+        // For title, search info from the sibling thumbnail
+        const thumbnailEl = this.closest(".video-card").querySelector(".video-thumbnail");
+        videoInfo = JSON.parse(thumbnailEl.getAttribute("data-video-info"));
+      }
+      showInlinePlayer(videoInfo);
+    });
+  });
+
+  // Add click event to copy link buttons
+  document.querySelectorAll(".copy-link-btn").forEach((btn) => {
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      const videoId = this.getAttribute("data-video-id");
+      const videoUrl = window.location.origin + window.location.pathname.replace('index.php', '') + 'watch.php?v=' + videoId;
+      
+      navigator.clipboard.writeText(videoUrl).then(() => {
+        const span = this.querySelector("span");
+        const originalText = span.textContent;
+        this.classList.add("copied");
+        span.textContent = "Copied!";
+        
+        setTimeout(() => {
+          this.classList.remove("copied");
+          span.textContent = originalText;
+        }, 2000);
+      }).catch(err => {
+        console.error("Failed to copy link:", err);
+      });
     });
   });
 }
@@ -166,7 +200,7 @@ function populateSideNavbar() {
   const allCategoryItem = document.createElement("li");
   allCategoryItem.className = "category-item";
   allCategoryItem.innerHTML = `
-      <div class="category-header active" data-category="all">
+      <div class="category-header${selectedMainCategory === "all" ? " active" : ""}" data-category="all">
         <span>All Categories</span>
       </div>
     `;
@@ -206,14 +240,15 @@ function populateSideNavbar() {
     const categoryName = categoryData.name;
     const hasSubcategories = subCategories.has(categoryId);
     const subcategoryCount = hasSubcategories ? subCategories.get(categoryId).size : 0;
+    
+    const isMainActive = selectedMainCategory === categoryId;
 
     const categoryItem = document.createElement("li");
     categoryItem.className = "category-item";
     categoryItem.innerHTML = `
-        <div class="category-header${hasSubcategories ? " has-subcategories" : ""
-      }" data-category="${categoryId}">
+        <div class="category-header${hasSubcategories ? " has-subcategories" : ""}${isMainActive ? " active" : ""}" data-category="${categoryId}">
           <span>${categoryName}</span>
-          ${hasSubcategories ? '<span class="toggle-icon">▼</span>' : ""}
+          ${hasSubcategories ? `<span class="toggle-icon" style="transform: ${isMainActive ? 'rotate(180deg)' : 'rotate(0deg)'}">▼</span>` : ""}
         </div>
       `;
 
@@ -231,12 +266,13 @@ function populateSideNavbar() {
       });
       
       const subcategoryList = document.createElement("ul");
-      subcategoryList.className = "subcategory-list";
+      subcategoryList.className = `subcategory-list${isMainActive ? " open" : ""}`;
 
       // Add each subcategory first
       sortedSubCategories.forEach(([subCategoryId, subCategoryData]) => {
+        const isSubActive = selectedMainCategory === categoryId && selectedSubCategory === subCategoryId;
         const subcategoryItem = document.createElement("li");
-        subcategoryItem.className = "subcategory-item";
+        subcategoryItem.className = `subcategory-item${isSubActive ? " active" : ""}`;
         subcategoryItem.textContent = subCategoryData.name;
         subcategoryItem.setAttribute("data-main-category", categoryId);
         subcategoryItem.setAttribute("data-sub-category", subCategoryId);
@@ -266,8 +302,9 @@ function populateSideNavbar() {
 
       // Add "All" option only if there's more than one subcategory
       if (subcategoryCount > 1) {
+        const isAllActive = selectedMainCategory === categoryId && selectedSubCategory === "all";
         const allOption = document.createElement("li");
-        allOption.className = "all-option";
+        allOption.className = `all-option${isAllActive ? " active" : ""}`;
         allOption.textContent = "All " + categoryName;
         allOption.setAttribute("data-main-category", categoryId);
         allOption.setAttribute("data-sub-category", "all");
@@ -352,4 +389,142 @@ function sendVideoComplete(videoId) {
     .then((res) => res.json())
     .then((data) => console.log("Video complete sent:", data))
     .catch((err) => console.error("Failed to send complete event:", err));
+}
+
+// Inline Video Player functions
+function showInlinePlayer(videoInfo, isPopState = false) {
+  const inlineContainer = document.getElementById("inline-player-container");
+  if (!inlineContainer) return;
+
+  const filterContainer = document.getElementById("filter-container");
+  const galleryContainer = document.getElementById("video-gallery");
+
+  if (filterContainer) filterContainer.style.display = "none";
+  if (galleryContainer) galleryContainer.style.display = "none";
+
+  const playerWrapper = inlineContainer.querySelector(".watch-video-player-wrapper");
+  const infoContainer = document.getElementById("inline-video-info");
+  const videoType = getVideoType(videoInfo.video_link);
+
+  let playerHtml = "";
+  if (videoType === "youtube") {
+    const videoId = getYouTubeId(videoInfo.video_link);
+    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+    playerHtml = `<iframe src="${embedUrl}" frameborder="0" allowfullscreen style="position: absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>`;
+  } else if (videoType === "vimeo") {
+    const videoId = getVimeoId(videoInfo.video_link);
+    const embedUrl = `https://player.vimeo.com/video/${videoId}?autoplay=1`;
+    playerHtml = `<iframe src="${embedUrl}" frameborder="0" allowfullscreen style="position: absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>`;
+  } else if (videoType === "direct" || videoType === "other") {
+    playerHtml = `
+      <video controls autoplay style="position: absolute; top:0; left:0; width:100%; height:100%;">
+        <source src="${videoInfo.video_link}" type="${getVideoFileType(videoInfo.video_link)}">
+        Your browser does not support the video tag.
+      </video>
+    `;
+  }
+
+  playerWrapper.innerHTML = playerHtml;
+
+  infoContainer.innerHTML = `
+    <h2 class="modal-video-title" style="margin-top: 0;">${videoInfo.topic}</h2>
+    <div class="modal-meta">
+      <div class="modal-meta-item"><span class="meta-icon">⏱️</span> ${formatDuration(videoInfo.topic_duration)} hrs</div>
+      <div class="modal-meta-item"><span class="meta-icon">👁️</span> ${videoInfo.watch_count} views</div>
+      <div class="modal-meta-item"><span class="meta-icon">📅</span> ${videoInfo.fr_training_date || "—"}</div>
+    </div>
+    <div class="modal-description" style="margin-top: 1rem; color: var(--text-light); line-height: 1.6; font-size: 0.95rem;">${videoInfo.video_description}</div>
+    <div class="modal-tags" style="margin-top: 1.5rem;">
+      ${videoInfo.main_category_name ? `<span class="modal-tag">${videoInfo.main_category_name}</span>` : ""}
+      ${videoInfo.sub_category_name ? `<span class="modal-tag">${videoInfo.sub_category_name}</span>` : ""}
+    </div>
+  `;
+
+  inlineContainer.style.display = "block";
+
+  // Set the video ID on the inline copy link button and bind listener
+  const inlineCopyBtn = document.getElementById("inline-copy-link-btn");
+  if (inlineCopyBtn) {
+    inlineCopyBtn.setAttribute("data-video-id", videoInfo.id);
+    
+    if (!inlineCopyBtn.dataset.listenerAttached) {
+      inlineCopyBtn.addEventListener("click", function() {
+        const videoId = this.getAttribute("data-video-id");
+        if (!videoId) return;
+        const videoUrl = window.location.origin + window.location.pathname.replace('index.php', '') + 'watch.php?v=' + videoId;
+        
+        navigator.clipboard.writeText(videoUrl).then(() => {
+          const span = this.querySelector("span");
+          const originalText = span.textContent;
+          this.classList.add("copied");
+          span.textContent = "Copied!";
+          
+          setTimeout(() => {
+            this.classList.remove("copied");
+            span.textContent = originalText;
+          }, 2000);
+        }).catch(err => {
+          console.error("Failed to copy link:", err);
+        });
+      });
+      inlineCopyBtn.dataset.listenerAttached = "true";
+    }
+  }
+
+  // Bind back button listener once
+  const backBtn = document.getElementById("back-to-gallery-btn");
+  if (backBtn && !backBtn.dataset.listenerAttached) {
+    backBtn.addEventListener("click", function() {
+      hideInlinePlayer();
+    });
+    backBtn.dataset.listenerAttached = "true";
+  }
+
+  if (!isPopState) {
+    const newUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}?v=${videoInfo.id}`;
+    window.history.pushState({ videoId: videoInfo.id }, '', newUrl);
+  }
+
+  // Update views counter in database
+  if (videoType === "direct" || videoType === "other") {
+    const videoElement = playerWrapper.querySelector("video");
+    if (videoElement) {
+      videoElement.addEventListener("ended", function () {
+        sendVideoComplete(videoInfo.id);
+      });
+    }
+  } else {
+    sendVideoComplete(videoInfo.id);
+  }
+}
+
+function hideInlinePlayer(isPopState = false) {
+  const inlineContainer = document.getElementById("inline-player-container");
+  if (!inlineContainer || inlineContainer.style.display === "none") return;
+
+  const playerWrapper = inlineContainer.querySelector(".watch-video-player-wrapper");
+  if (playerWrapper) playerWrapper.innerHTML = "";
+
+  inlineContainer.style.display = "none";
+  const filterContainer = document.getElementById("filter-container");
+  const galleryContainer = document.getElementById("video-gallery");
+
+  if (filterContainer) filterContainer.style.display = "flex";
+  if (galleryContainer) galleryContainer.style.display = "grid";
+
+  if (!isPopState) {
+    const cleanUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
+    window.history.pushState({}, '', cleanUrl);
+  }
+}
+
+function checkAndAutoOpenVideo() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const videoId = urlParams.get("v");
+  if (videoId && window.videosData && window.videosData.length > 0) {
+    const video = window.videosData.find(v => String(v.id) === String(videoId));
+    if (video) {
+      showInlinePlayer(video, true);
+    }
+  }
 }
