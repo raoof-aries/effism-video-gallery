@@ -1,3 +1,29 @@
+<?php
+include("../includes/connect.inc.php");
+
+$video_id = isset($_GET['v']) ? intval($_GET['v']) : 0;
+$video = null;
+
+if ($video_id > 0) {
+    $SQL = "SELECT v.*, c1.name AS main_category_name, c2.name AS sub_category_name, d2.short_name AS division, u.full_name AS added_by_name, DATE_FORMAT(v.training_date, '%d-%m-%Y') AS fr_training_date,
+    DATE_FORMAT(v.added_date, '%d-%m-%Y') AS added_date, IFNULL(vh.watch_count, 0) AS watch_count, c1.sort_order AS main_cat_sort_order, c2.sort_order AS sub_cat_sort_order
+    FROM tbl_videos v
+    LEFT JOIN tbl_video_categories c1 ON v.main_category=c1.id AND c1.type=1
+    LEFT JOIN tbl_video_categories c2 ON v.sub_category=c2.id AND c2.type=2
+    LEFT JOIN tbl_users u ON v.added_by=u.user_id
+    LEFT JOIN tbl_dimensions d2 ON v.conducted_by=d2.id AND d2.dimension_type=2
+    LEFT JOIN (SELECT v_id, COUNT(id) AS watch_count FROM tbl_video_history GROUP BY v_id) vh ON vh.v_id = v.id 
+    WHERE v.status=1 AND v.id = ? LIMIT 1";
+    
+    if ($stmt = $mysqli->prepare($SQL)) {
+        $stmt->bind_param("i", $video_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $video = $result->fetch_assoc();
+        $stmt->close();
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -246,6 +272,11 @@
             }
         }
     </style>
+    
+    <!-- Inject current video details directly into JS context -->
+    <script>
+        window.currentVideo = <?php echo $video ? json_encode($video) : 'null'; ?>;
+    </script>
 </head>
 
 <body>
@@ -265,7 +296,6 @@
 
     <!-- Load JavaScript files -->
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="./js/data.js"></script>
     <script src="./js/video.js"></script>
     <script src="./js/watch.js"></script>
 </body>

@@ -19,26 +19,35 @@ function initWatchPage() {
     return;
   }
 
-  // If videosData is not yet loaded, wait and retry
-  if (!window.videosData || window.videosData.length === 0) {
+  // 1. Check if we have the current video details injected directly by PHP
+  if (window.currentVideo && String(window.currentVideo.id) === String(videoId)) {
+    renderWatchVideo(window.currentVideo);
+    return;
+  }
+
+  // 2. Fallback: Check if videosData is loaded and has the video details
+  if (window.videosData && window.videosData.length > 0) {
+    const video = window.videosData.find((v) => String(v.id) === String(videoId));
+    if (video) {
+      renderWatchVideo(video);
+      return;
+    }
+  }
+
+  // 3. Fallback: If videosData is defined but empty, wait a short moment and retry
+  if (window.videosData && window.videosData.length === 0) {
     setTimeout(initWatchPage, 100);
     return;
   }
 
-  const video = window.videosData.find((v) => String(v.id) === String(videoId));
-
-  if (!video) {
-    document.getElementById("watch-container").innerHTML = `
-      <div class="status-message">
-        <h3>Video Not Found</h3>
-        <p>The requested video does not exist or has been removed.</p>
-        <a href="index.php" class="btn-gallery">Return to Gallery</a>
-      </div>
-    `;
-    return;
-  }
-
-  renderWatchVideo(video);
+  // 4. Video not found or query failed
+  document.getElementById("watch-container").innerHTML = `
+    <div class="status-message">
+      <h3>Video Not Found</h3>
+      <p>The requested video does not exist or has been removed.</p>
+      <a href="index.php" class="btn-gallery">Return to Gallery</a>
+    </div>
+  `;
 }
 
 function renderWatchVideo(videoInfo) {

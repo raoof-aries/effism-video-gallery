@@ -1,12 +1,12 @@
 <?php
 
-// session_start();
+session_start();
 
-// if(!isset($_SESSION['user_id'])){
-//     echo "Session expired. Please login again.";
-//     header("location: ../index.php");
-//     exit();
-// }
+if(!isset($_SESSION['user_id'])){
+    echo "Session expired. Please login again.";
+    header("location: ../index.php");
+    exit();
+}
 
 include("../includes/connect.inc.php");
 
